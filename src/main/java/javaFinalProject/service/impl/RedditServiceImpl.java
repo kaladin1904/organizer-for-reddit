@@ -31,7 +31,7 @@ public class RedditServiceImpl implements RedditService {
      HttpHeaders headers = new HttpHeaders();
      headers.setBasicAuth(redditProperties.getClientID(), redditProperties.getClientSecret());
      headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-     headers.put("User-Agent", Collections.singletonList("(by /u/labor_durus)"));
+     headers.put("User-Agent", Collections.singletonList("(by /u/kaladin1904)"));
      String body = "grant_type=client_credentials";
      HttpEntity<String> request
                = new HttpEntity<>(body, headers);

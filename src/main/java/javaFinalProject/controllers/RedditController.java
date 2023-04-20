@@ -20,22 +20,13 @@ public class RedditController {
     @Autowired
     public RedditService redditService;
 
-    // public RedditController() {
-    //     System.out.println(this.getSavedPosts());
-    // }
-
-    @GetMapping("/hello")
-    public String hello() {
-        return "Hello World";
-    }
-
     @GetMapping("/saved")
     public String getSavedPosts() {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         String authToken = redditService.getAuthToken();
         headers.setBearerAuth(authToken);
-        headers.put("User-Agent", Collections.singletonList("(by /u/labor_durus)"));
+        headers.put("User-Agent", Collections.singletonList("(by /u/kaladin1904)"));
         HttpEntity<String> entity = new HttpEntity<String>("parameters", headers);
         String subReddit = "java";
         String url = "https://oauth.reddit.com/r/"+subReddit+"/hot";
