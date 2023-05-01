@@ -3,6 +3,6 @@ package javaFinalProject.service;
 
 public interface RedditService {
 
-    public String getAuthToken();
+    public String getUserName(String token);
     
 }
