@@ -1,11 +1,8 @@
 package javaFinalProject.controllers;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,19 +16,20 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import javaFinalProject.models.RedditChildrenObject;
-import javaFinalProject.models.RedditDataObject;
-import javaFinalProject.models.RedditSavedApiResponse;
-import javaFinalProject.models.SavedPost;
+import javaFinalProject.models.SavedPostsList;
+import javaFinalProject.models.SavedUser;
+import javaFinalProject.models.UserAuthDetails;
+import javaFinalProject.models.UserDTO;
+import javaFinalProject.models.UsernameDTO;
 import javaFinalProject.service.RedditService;
 import javaFinalProject.util.RedditProperties;
 
@@ -39,12 +37,7 @@ import javaFinalProject.util.RedditProperties;
 @RestController
 public class RedditController {
 
-    private static String REDIRECT_URI = "http://localhost:4200/test/";
-    private static ObjectMapper mapper = new ObjectMapper()
-        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    private String username;
-    // TODO - have to handle refreshing and validity of token - not thought about that yet
-    private String authToken;
+    private static String REDIRECT_URI = "http://localhost:4200/saved/";
 
     @Autowired
     public RedditService redditService;
@@ -52,24 +45,44 @@ public class RedditController {
     @Autowired
     private RedditProperties redditProperties;
 
-    @GetMapping("/getAccessToken")
-    public ResponseEntity<Boolean> getAccessToken(
-        @RequestParam(required = true, value = "state") String state, @RequestParam(required = true, value = "code") String code) {
-        System.out.println(code);
-        System.out.println(state);
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody UserDTO userDTO) {
+        SavedUser retrievedUser = redditService.checkIfUserExists(userDTO.getUsername());
+        if (retrievedUser != null){
+            UsernameDTO usernameDTO = new UsernameDTO(retrievedUser.getUsername());
+            return retrievedUser.getPassword().equals(userDTO.getPassword()) ? 
+                ResponseEntity.ok(usernameDTO): 
+                ResponseEntity.badRequest().body("incorrect password");
+        }
+        return ResponseEntity.badRequest().body("user does not exist");
+    }
+
+    @PostMapping("/signup")
+    public ResponseEntity<?> register(@RequestBody UserDTO userDTO) {
+        SavedUser retrievedUser = redditService.checkIfUserExists(userDTO.getUsername());
+        if(retrievedUser != null) {
+            return ResponseEntity.badRequest().body("user already exists");
+        }
+        SavedUser user =  redditService.createUser(userDTO);
+        UsernameDTO usernameDTO = new UsernameDTO(user.getUsername());
+        return ResponseEntity.ok().body(usernameDTO);
+    }
+
+    private ResponseEntity<?> existingUser(String state, String code, String username){
+        SavedUser savedUser = redditService.checkIfUserExists(username);
+        UserAuthDetails savedUserAuthDetails = redditService.getUserAuthDetails(username);
+
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setBasicAuth(redditProperties.getClientID(), redditProperties.getClientSecret());
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
         headers.put("User-Agent", Collections.singletonList("(by /u/kaladin1904)"));
 
-        MultiValueMap<String, String> body1 = new LinkedMultiValueMap<String, String>();     
-        body1.add("grant_type", "authorization_code");
-        body1.add("code", code);
-        body1.add("redirect_uri", REDIRECT_URI);
+        MultiValueMap<String, String> body = new LinkedMultiValueMap<String, String>();     
+        body.add("grant_type", "refresh_token");
+        body.add("refresh_token", savedUserAuthDetails.getRefreshToken());
 
-
-        HttpEntity<?> request = new HttpEntity<Object>(body1, headers);
+        HttpEntity<?> request = new HttpEntity<Object>(body, headers);
         String authUrl = "https://www.reddit.com/api/v1/access_token";
         ResponseEntity<String> response = restTemplate.postForEntity(
             authUrl, request, String.class);
@@ -80,67 +93,90 @@ public class RedditController {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        System.out.println("Response ============" + response.getBody());
+
         if(String.valueOf(map.get("access_token")) != null) {
-            authToken = String.valueOf(map.get("access_token"));
-            username = redditService.getUserName(String.valueOf(map.get("access_token")));
-            return ResponseEntity.ok(true);
+            boolean flag = redditService.saveUserAuthDetails(
+                username,
+                String.valueOf(map.get("access_token")),
+                String.valueOf(map.get("refresh_token")));
+            UsernameDTO usernameDTO = new UsernameDTO(savedUser.getUsername());
+            return flag ? ResponseEntity.ok(usernameDTO) : ResponseEntity.notFound().build();
         } 
-        
         return ResponseEntity.notFound().build();
+    }
+
+    private ResponseEntity<?> firstTimeUser(String state, String code, String username) {
+        SavedUser savedUser = redditService.checkIfUserExists(username);
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBasicAuth(redditProperties.getClientID(), redditProperties.getClientSecret());
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        headers.put("User-Agent", Collections.singletonList("(by /u/kaladin1904)"));
+
+        MultiValueMap<String, String> body = new LinkedMultiValueMap<String, String>();     
+        body.add("grant_type", "authorization_code");
+        body.add("code", code);
+        body.add("redirect_uri", REDIRECT_URI);
+
+
+        HttpEntity<?> request = new HttpEntity<Object>(body, headers);
+        String authUrl = "https://www.reddit.com/api/v1/access_token";
+        ResponseEntity<String> response = restTemplate.postForEntity(
+            authUrl, request, String.class);
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> map = new HashMap<>();
+        try {
+            map.putAll(mapper.readValue(response.getBody(), new TypeReference<Map<String,Object>>(){}));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if(String.valueOf(map.get("access_token")) != null) {
+            boolean flag = redditService.saveUserAuthDetails(
+                username,
+                String.valueOf(map.get("access_token")),
+                String.valueOf(map.get("refresh_token")));
+            UsernameDTO usernameDTO = new UsernameDTO(savedUser.getUsername());
+            return flag ? ResponseEntity.ok(usernameDTO) : ResponseEntity.notFound().build();
+        } 
+        return ResponseEntity.notFound().build();
+    
+        
+    }
+
+    @GetMapping("/getAccessToken")
+    public ResponseEntity<?> getAccessToken(
+        @RequestParam(required = true, value = "state") String state,
+        @RequestParam(required = true, value = "code") String code,
+        @RequestParam(required = false, value = "username") String username) {
+        if(code.equals("existingUser")) {
+            return existingUser(code, state, username);
+        }else {
+            return firstTimeUser(state, code, username);
+        }
     }
     
     @GetMapping("/saved")
-    public ResponseEntity<SavedPost[]> getSavedPosts() {
-        //TODO - add check that username and authToken both exist and are valid
+    public ResponseEntity<SavedPostsList> getSavedPosts(
+        @RequestParam(required = true, value = "username") String username
+    ) {
+        UserAuthDetails savedUserAuthDetails = redditService.getUserAuthDetails(username);
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(authToken);
+        headers.setBearerAuth(savedUserAuthDetails.getAccessToken());
         
         headers.put("User-Agent", Collections.singletonList("(by /u/kaladin1904)"));
         HttpEntity<String> entity = new HttpEntity<String>("parameters", headers);
-        // TODO - add check for username
-        String url = "https://oauth.reddit.com/user/" + username + "/saved";
+
+        String redditUsername = redditService.getUserName(savedUserAuthDetails.getAccessToken());
+        String url = "https://oauth.reddit.com/user/" + redditUsername + "/saved";
         ResponseEntity<String> response
                 = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
         
         if(response.getStatusCode().equals(HttpStatusCode.valueOf(403))) {
             System.err.println(response);  
         }
-        System.out.println(response.getStatusCode());
-        System.out.println("RESPONSE BODY  =  = = = = = = = = = = " + response.getBody());
 
-        System.out.println("*******************************");
-        parseResponseFromRedditSavedApi(response.getBody());
-        return null;
-    }
-
-    //TODO - move to Service later
-    private SavedPost[] parseResponseFromRedditSavedApi(String responseBody) {
-          try {
-            RedditSavedApiResponse redditSavedApiResponse = mapper.readValue(responseBody, RedditSavedApiResponse.class);
-            RedditDataObject redditDataObject = mapper.readValue(
-                redditSavedApiResponse.getData().toString(), RedditDataObject.class);
-            // System.out.println(redditDataObject.toString());
-            List<RedditChildrenObject> childrenObjectsForAllSavedPosts = 
-                Arrays.asList(mapper.readValue(redditDataObject.getChildren().toString(), RedditChildrenObject[].class));
-            List<SavedPost> allSavedPosts = new ArrayList<>();
-            for(RedditChildrenObject redditChildrenObject : childrenObjectsForAllSavedPosts) {
-                allSavedPosts.add(mapper.readValue(redditChildrenObject.getData().toString(), SavedPost.class));
-            }
-            // List<SavedPost> allSavedPosts = 
-            //     Arrays.asList(mapper.readValue(redditDataObject.getChildren().toString(), SavedPost[].class));
-            for(SavedPost savedPost : allSavedPosts) {
-                System.out.println(savedPost);
-            }
-
-            
-          } catch (JsonProcessingException e) {
-               e.printStackTrace();
-          } catch (IOException e) {
-               e.printStackTrace();
-          }
-
-          return null;
+        SavedPostsList allSavedPostsList = redditService.parseResponseFromRedditSavedApi(response.getBody());
+        return ResponseEntity.ok(allSavedPostsList);
     }
 }

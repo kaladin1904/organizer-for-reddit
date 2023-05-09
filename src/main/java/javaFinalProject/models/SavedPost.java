@@ -16,6 +16,9 @@ public class SavedPost {
     @JsonProperty("name")
     private String user;
 
+    @JsonProperty("author")
+    private String author;
+
     @JsonProperty("ups")
     private String upvotes;
 
@@ -33,5 +36,11 @@ public class SavedPost {
 
     @JsonProperty("subreddit_type")
     private String subredditType;
+
+    @JsonProperty("permalink")
+    private String link;
+
+    @JsonProperty("num_comments")
+    private int num_comments;
 
 }

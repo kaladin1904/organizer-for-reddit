@@ -3,21 +3,17 @@ package javaFinalProject.models;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
-@Getter @Setter @NoArgsConstructor
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 @ToString
-public class User {
+public class UsernameDTO {
 
     @JsonProperty
-    public String name;
-
-    public String getUsername() {
-        return name;
-    }
-    
+    public String username;
 }
