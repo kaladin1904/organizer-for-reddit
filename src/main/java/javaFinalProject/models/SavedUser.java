@@ -2,6 +2,8 @@ package javaFinalProject.models;
 
 import java.util.UUID;
 
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -14,7 +16,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name="all_users")
+@EntityScan
+@Table(name="reddit_users")
 @Data
 @Builder
 @NoArgsConstructor

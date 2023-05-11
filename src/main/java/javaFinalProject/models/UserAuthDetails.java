@@ -1,5 +1,7 @@
 package javaFinalProject.models;
 
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -11,6 +13,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
+@EntityScan
 @Table(name="user_details")
 @Data
 @Builder
