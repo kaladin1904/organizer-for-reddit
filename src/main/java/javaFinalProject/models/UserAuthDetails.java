@@ -1,11 +1,9 @@
 package javaFinalProject.models;
 
-import java.util.UUID;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,7 +11,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name="userDetails")
+@Table(name="user_details")
 @Data
 @Builder
 @NoArgsConstructor
@@ -25,8 +23,10 @@ public class UserAuthDetails {
     private String username;
 
     @Column(nullable = false)
+    @Lob
     private String accessToken;
 
     @Column(nullable = false)
+    @Lob
     private String refreshToken;
 }

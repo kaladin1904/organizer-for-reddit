@@ -25,6 +25,7 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import javaFinalProject.models.ActiveUser;
 import javaFinalProject.models.SavedPostsList;
 import javaFinalProject.models.SavedUser;
 import javaFinalProject.models.UserAuthDetails;
@@ -50,9 +51,12 @@ public class RedditController {
         SavedUser retrievedUser = redditService.checkIfUserExists(userDTO.getUsername());
         if (retrievedUser != null){
             UsernameDTO usernameDTO = new UsernameDTO(retrievedUser.getUsername());
-            return retrievedUser.getPassword().equals(userDTO.getPassword()) ? 
-                ResponseEntity.ok(usernameDTO): 
-                ResponseEntity.badRequest().body("incorrect password");
+            if (retrievedUser.getPassword().equals(userDTO.getPassword())) {
+                redditService.addActiveUser(userDTO.getUsername());
+                return ResponseEntity.ok(usernameDTO);
+            } else {
+                return ResponseEntity.badRequest().body("incorrect password");
+            }
         }
         return ResponseEntity.badRequest().body("user does not exist");
     }
@@ -65,6 +69,7 @@ public class RedditController {
         }
         SavedUser user =  redditService.createUser(userDTO);
         UsernameDTO usernameDTO = new UsernameDTO(user.getUsername());
+        redditService.addActiveUser(userDTO.getUsername());
         return ResponseEntity.ok().body(usernameDTO);
     }
 
@@ -168,7 +173,7 @@ public class RedditController {
         HttpEntity<String> entity = new HttpEntity<String>("parameters", headers);
 
         String redditUsername = redditService.getUserName(savedUserAuthDetails.getAccessToken());
-        String url = "https://oauth.reddit.com/user/" + redditUsername + "/saved";
+        String url = "https://oauth.reddit.com/user/" + redditUsername + "/saved?limit=100";
         ResponseEntity<String> response
                 = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
         
@@ -178,5 +183,32 @@ public class RedditController {
 
         SavedPostsList allSavedPostsList = redditService.parseResponseFromRedditSavedApi(response.getBody());
         return ResponseEntity.ok(allSavedPostsList);
+    }
+
+    @GetMapping("/isLoggedIn")
+    public ResponseEntity<?> isLoggedIn(
+        @RequestParam(required = true, value = "username") String username) {
+        
+        SavedUser savedUser = redditService.checkIfUserExists(username);
+        ActiveUser activeUser = redditService.isLoggedIn(username);
+        if(savedUser != null && activeUser != null) {
+            UsernameDTO usernameDTO = new UsernameDTO(username);
+            return ResponseEntity.ok(usernameDTO);
+        }else {
+            return ResponseEntity.badRequest().body("the user does not exist or is not active");
+        }
+    }
+
+    @GetMapping("/logout")
+    public ResponseEntity<?> logout( @RequestParam(required = true, value = "username") String username) {
+        SavedUser savedUser = redditService.checkIfUserExists(username);
+        ActiveUser activeUser = redditService.isLoggedIn(username);
+        if(savedUser != null && activeUser != null) {
+            redditService.removeActiveUser(activeUser);
+            UsernameDTO usernameDTO = new UsernameDTO(username);
+            return ResponseEntity.ok(usernameDTO);
+        }  else {
+            return ResponseEntity.badRequest().body("the user does not exist or is not active");
+        }
     }
 }

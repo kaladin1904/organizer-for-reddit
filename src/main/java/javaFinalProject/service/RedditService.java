@@ -1,5 +1,6 @@
 package javaFinalProject.service;
 
+import javaFinalProject.models.ActiveUser;
 import javaFinalProject.models.SavedPostsList;
 import javaFinalProject.models.SavedUser;
 import javaFinalProject.models.UserAuthDetails;
@@ -19,5 +20,9 @@ public interface RedditService {
 
     public UserAuthDetails getUserAuthDetails(String username);
 
-    
+    public ActiveUser isLoggedIn(String username);
+
+    public ActiveUser addActiveUser(String username);
+
+    public ActiveUser removeActiveUser(ActiveUser activeUser);
 }

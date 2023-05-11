@@ -19,6 +19,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import javaFinalProject.models.ActiveUser;
+import javaFinalProject.models.ActiveUserRepository;
 import javaFinalProject.models.RedditChildrenObject;
 import javaFinalProject.models.RedditDataObject;
 import javaFinalProject.models.RedditSavedApiResponse;
@@ -43,6 +45,9 @@ public class RedditServiceImpl implements RedditService {
 
     @Autowired
     private UserAuthDetailsRepository userAuthDetailsRepository;
+
+    @Autowired
+    private ActiveUserRepository activeUserRepository;
 
      public RedditServiceImpl() {}
 
@@ -126,5 +131,23 @@ public class RedditServiceImpl implements RedditService {
           }
 
           return null;
+    }
+
+    @Override
+    public ActiveUser isLoggedIn(String username) {
+          return activeUserRepository.findByUsername(username);
+    }
+
+    @Override
+    public ActiveUser addActiveUser(String username) {
+          ActiveUser activeUser = new ActiveUser(username);
+          activeUserRepository.save(activeUser);
+          return activeUser;
+    }
+
+    @Override
+    public ActiveUser removeActiveUser(ActiveUser activeUser) {
+     activeUserRepository.delete(activeUser);
+     return activeUser; 
     }
 }
