@@ -16,7 +16,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@EntityScan
 @Table(name="reddit_users")
 @Data
 @Builder

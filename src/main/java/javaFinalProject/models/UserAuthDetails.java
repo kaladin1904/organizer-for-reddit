@@ -13,7 +13,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@EntityScan
 @Table(name="user_details")
 @Data
 @Builder

@@ -12,7 +12,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@EntityScan
 @Table(name="active_users")
 @Data
 @Builder
