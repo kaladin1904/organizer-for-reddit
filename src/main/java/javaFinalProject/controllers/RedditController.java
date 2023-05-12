@@ -34,7 +34,7 @@ import javaFinalProject.models.UsernameDTO;
 import javaFinalProject.service.RedditService;
 import javaFinalProject.util.RedditProperties;
 
-@CrossOrigin(origins = "https://kaladin1904.github.io/organizer-for-reddit-frontend")
+@CrossOrigin(origins = "https://kaladin1904.github.io")
 @RestController
 public class RedditController {
 
