@@ -34,11 +34,11 @@ import javaFinalProject.models.UsernameDTO;
 import javaFinalProject.service.RedditService;
 import javaFinalProject.util.RedditProperties;
 
-@CrossOrigin(origins = "http://localhost:4200")
+@CrossOrigin(origins = "https://kaladin1904.github.io/organizer-for-reddit-frontend")
 @RestController
 public class RedditController {
 
-    private static String REDIRECT_URI = "http://localhost:4200/saved/";
+    private static String REDIRECT_URI = "https://kaladin1904.github.io/organizer-for-reddit-frontend/saved/";
 
     @Autowired
     public RedditService redditService;
