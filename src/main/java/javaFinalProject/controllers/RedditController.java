@@ -153,7 +153,10 @@ public class RedditController {
         @RequestParam(required = true, value = "state") String state,
         @RequestParam(required = true, value = "code") String code,
         @RequestParam(required = false, value = "username") String username) {
-        if(code.equals("existingUser")) {
+        SavedUser savedUser = redditService.checkIfUserExists(username);
+        ActiveUser activeUser = redditService.isLoggedIn(username);
+        UserAuthDetails authDetails = redditService.getUserAuthDetails(username);
+        if(code.equals("existingUser") || (activeUser!=null && savedUser!=null && authDetails != null)) {
             return existingUser(code, state, username);
         }else {
             return firstTimeUser(state, code, username);
