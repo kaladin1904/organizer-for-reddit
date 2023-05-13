@@ -1,1 +1,1 @@
-# organizer-for-reddit
+# organizer-for-reddi
